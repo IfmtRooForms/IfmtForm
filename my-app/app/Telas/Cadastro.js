@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { View, Text, TextInput, TouchableOpacity, StyleSheet, ActivityIndicator, Image } from 'react-native';
+import { View, Text, TextInput, TouchableOpacity, StyleSheet, ActivityIndicator, Image, Alert } from 'react-native';
 import { Formik } from 'formik';
 import * as Yup from 'yup';
 import { useNavigation } from '@react-navigation/native';
@@ -19,12 +19,36 @@ const Cadastro = () => {
       .required("Confirmação de senha é obrigatória"),
   });
 
-  const handleCadastro = (values) => {
+  // Função para lidar com o envio do cadastro
+  const handleCadastro = async (values) => {
     setIsLoading(true);
-    setTimeout(() => {
+
+    try {
+      const response = await fetch('http://10.0.0.236:4001/cadastro', {  
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          name: values.name,
+          email: values.email,
+          password: values.password,
+        }),
+      });
+
+      const data = await response.json();
+
+      if (response.ok) {
+        Alert.alert('Sucesso', 'Cadastro realizado com sucesso!');
+        navigation.navigate('Login'); // Navega para a tela de login
+      } else {
+        Alert.alert('Erro', data.message || 'Falha no cadastro.');
+      }
+    } catch (error) {
+      Alert.alert('Erro', 'Não foi possível conectar ao servidor.');
+    } finally {
       setIsLoading(false);
-      navigation.navigate('Login');
-    }, 2000);
+    }
   };
 
   const ConteudoBase = () => {

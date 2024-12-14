@@ -4,6 +4,8 @@ import { createStackNavigator } from '@react-navigation/stack';
 import Login from './Telas/Login';
 import Cadastro from './Telas/Cadastro';
 import Home from './Telas/Home';
+import Sala1 from './Telas/Sala1';
+import Finalizar from './Telas/Finalizar';
 
 const Stack = createStackNavigator();
 
@@ -14,6 +16,8 @@ export default class App extends React.Component {
           <Stack.Screen name="Login" component={Login} />
           <Stack.Screen name="Cadastro" component={Cadastro} />
           <Stack.Screen name="Home" component={Home} />
+          <Stack.Screen name="Sala1" component={Sala1} />
+          <Stack.Screen name="Finalizar" component={Finalizar} />
         </Stack.Navigator>
     );
   }
