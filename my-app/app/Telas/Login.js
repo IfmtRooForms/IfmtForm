@@ -4,10 +4,11 @@ import { View, Text, TextInput, TouchableOpacity, StyleSheet, Alert } from 'reac
 const Login = ({ navigation }) => {
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
+    
 
     const handleLogin = async () => {
         try {
-            const response = await fetch('http://10.0.0.236:4001/login', {
+            const response = await fetch('http://10.1.13.19:4001/login', {
                 method: 'POST', 
                 headers: {
                     'Content-Type': 'application/json'
@@ -19,10 +20,12 @@ const Login = ({ navigation }) => {
             console.log(data)
 
             if (response.ok) {
-                // Você pode comparar os dados do usuário aqui
-                // Se o login for bem-sucedido, navegue para a página inicial
-                Alert.alert('Sucesso', 'Login realizado!');
-                navigation.navigate('Home');
+                if(data.user["adm"] === "S"){
+                    navigation.navigate('TelaAdm');
+                }else{
+                    Alert.alert('Sucesso', 'Login realizado!');
+                    navigation.navigate('Home');
+                }
             } else {
                 Alert.alert('Erro', data.message || 'Login falhou.');
             }

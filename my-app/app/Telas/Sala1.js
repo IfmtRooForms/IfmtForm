@@ -1,61 +1,68 @@
 import React, { useState } from 'react';
-import { View, Text, TouchableOpacity, StyleSheet, Button } from 'react-native';
-import { useNavigation } from '@react-navigation/native';
+import { View, Text, TouchableOpacity, StyleSheet, Button, Alert } from 'react-native';
+import { useNavigation, useRoute } from '@react-navigation/native';
 
 const Sala1 = () => {
     const navigation = useNavigation();
-    const [respostaExpectativa, setRespostaExpectativa] = useState(null);
-    const [respostaRealidade, setRespostaRealidade] = useState(null);
-    const [perguntaIndex, setPerguntaIndex] = useState(0);
+    const route = useRoute();
+    const { roomNumber, userId } = route.params; // Dados passados pela rota
+
+    const [respostas, setRespostas] = useState([]); // Armazena todas as respostas
+    const [perguntaIndex, setPerguntaIndex] = useState(0); // Controle da pergunta atual
+    const [respostaAtual, setRespostaAtual] = useState({ expectativa: null, realidade: null });
 
     const perguntas = [
-        {
-            pergunta: "Quão satisfeito você está com os produtos/serviços que recebeu da escola?",
-        },
-        {
-            pergunta: "Como você avaliaria a qualidade do atendimento?",
-        },
-        {
-            pergunta: "Como você avalia a estrutura física da escola?",
-        },
-        {
-            pergunta: "Como você avalia a estrutura física da escola?",
-        },
-        {
-            pergunta: "Como você avalia a estrutura física da escola?",
-        },
-        {
-            pergunta: "Como você avalia a estrutura física da escola?",
-        },
-        {
-            pergunta: "Como você avalia a estrutura física da escola?",
-        },
-        {
-            pergunta: "Como você avalia a estrutura física da escola?",
-        },
-        // Adicione mais perguntas aqui
+        { id: 1, pergunta: "O curso Técnico em Secretariado integrado ao nível médio do campus Rondonópolis deveria ter equipamentos modernos para o uso dos alunos?" },
+        { id: 2, pergunta: "As suas instalações físicas do ambiente escolar do IFMT campus Rondonópolis deveria ser visualmente atrativo." },
+        { id: 3, pergunta: "Os servidores deveriam estar vestidos e asseados de modo apresentável e adequado ao ambiente escolar." },
+        { id: 4, pergunta: "As aparências das instalações físicas do IFMT campus Rondonópolis deveria estar conservada." },
+        { id: 5, pergunta: "As aparências das instalações físicas do IFMT campus Rondonópolis deveria estar conservada." },
+        { id: 6, pergunta: "O curso Técnico em Secretariado integrado ao nível médio do IFMT campus Rondonópolis têm equipamentos modernos para uso dos alunos." },
     ];
 
-    const handleSelectRespostaExpectativa = (opcao) => {
-        setRespostaExpectativa(opcao);
+    const handleSelectResposta = (campo, valor) => {
+        setRespostaAtual((prev) => ({ ...prev, [campo]: valor }));
     };
 
-    const handleSelectRespostaRealidade = (opcao) => {
-        setRespostaRealidade(opcao);
+    const handleProximaPergunta = async () => {
+        const perguntaAtual = perguntas[perguntaIndex];
+
+        setRespostas((prev) => [
+            ...prev,
+            { 
+                id: perguntaAtual.id, 
+                pergunta: perguntaAtual.pergunta, 
+                ...respostaAtual 
+            },
+        ]);
+
+        if (perguntaIndex < perguntas.length - 1) {
+            setPerguntaIndex(perguntaIndex + 1);
+            setRespostaAtual({ expectativa: null, realidade: null });
+        } else {
+            await enviarParaAPI();
+        }
     };
 
-    const handleProximaPergunta = () => {
-        if (respostaExpectativa !== null && respostaRealidade !== null) {
-            console.log('Expectativa:', respostaExpectativa);
-            console.log('Realidade:', respostaRealidade);
-            if (perguntaIndex < perguntas.length - 1) {
-                setPerguntaIndex(perguntaIndex + 1); // Avança para a próxima pergunta
-                setRespostaExpectativa(null); // Reseta a resposta para a expectativa
-                setRespostaRealidade(null); // Reseta a resposta para a realidade
+    const enviarParaAPI = async () => {
+        const payload = { userId, roomNumber, respostas };
+
+        try {
+            const response = await fetch('http://10.1.13.19:4001/salvarRespostas', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(payload),
+            });
+
+            if (response.ok) {
+                Alert.alert('Sucesso', 'Respostas enviadas com sucesso!');
+                navigation.navigate('Finalizar');
             } else {
-                // Se for a última pergunta, navega para a próxima tela ou finaliza
-                navigation.navigate('Finalizar'); // Navega para a tela de finalização ou outra tela
+                Alert.alert('Erro', 'Não foi possível enviar as respostas.');
             }
+        } catch (error) {
+            Alert.alert('Erro', 'Falha ao enviar as respostas.');
+            console.error('Erro ao conectar à API:', error);
         }
     };
 
@@ -65,45 +72,32 @@ const Sala1 = () => {
             <Text style={styles.pergunta}>{perguntas[perguntaIndex].pergunta}</Text>
 
             <View style={styles.opcoesContainer}>
-                <View style={styles.coluna}>
-                    <Text style={styles.subtitulo}>Expectativa</Text>
-                    {Array.from({ length: 5 }, (_, i) => (
-                        <TouchableOpacity
-                            key={`expectativa-${i}`}
-                            style={[
-                                styles.opcao,
-                                respostaExpectativa === i + 1 ? styles.selectedOption : null
-                            ]}
-                            onPress={() => handleSelectRespostaExpectativa(i + 1)}
-                        >
-                            <Text style={styles.opcaoText}>{i + 1}</Text>
-                        </TouchableOpacity>
-                    ))}
-                </View>
-
-                <View style={styles.coluna}>
-                    <Text style={styles.subtitulo}>Realidade</Text>
-                    {Array.from({ length: 5 }, (_, i) => (
-                        <TouchableOpacity
-                            key={`realidade-${i}`}
-                            style={[
-                                styles.opcao,
-                                respostaRealidade === i + 1 ? styles.selectedOption : null
-                            ]}
-                            onPress={() => handleSelectRespostaRealidade(i + 1)}
-                        >
-                            <Text style={styles.opcaoText}>{i + 1}</Text>
-                        </TouchableOpacity>
-                    ))}
-                </View>
+                {['expectativa', 'realidade'].map((campo) => (
+                    <View key={campo} style={styles.coluna}>
+                        <Text style={styles.subtitulo}>
+                            {campo.charAt(0).toUpperCase() + campo.slice(1)}
+                        </Text>
+                        {Array.from({ length: 5 }, (_, i) => (
+                            <TouchableOpacity
+                                key={`${campo}-${i}`}
+                                style={[
+                                    styles.opcao,
+                                    respostaAtual[campo] === i + 1 ? styles.selectedOption : null,
+                                ]}
+                                onPress={() => handleSelectResposta(campo, i + 1)}
+                            >
+                                <Text style={styles.opcaoText}>{i + 1}</Text>
+                            </TouchableOpacity>
+                        ))}
+                    </View>
+                ))}
             </View>
 
             <Button
-                title="Próximo"
+                title={perguntaIndex === perguntas.length - 1 ? "Finalizar" : "Próximo"}
                 onPress={handleProximaPergunta}
-                disabled={respostaExpectativa === null || respostaRealidade === null} // Desativa o botão caso não tenha sido selecionada uma opção
+                disabled={!respostaAtual.expectativa || !respostaAtual.realidade}
             />
-            
         </View>
     );
 };
