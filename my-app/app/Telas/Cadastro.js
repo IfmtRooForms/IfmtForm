@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { View, Text, TextInput, TouchableOpacity, StyleSheet, ActivityIndicator, Image, Alert } from 'react-native';
+import { View, Text, TextInput, TouchableOpacity, StyleSheet, ActivityIndicator, Image, Alert, FlatList, Modal } from 'react-native';
 import { Formik } from 'formik';
 import * as Yup from 'yup';
 import { useNavigation } from '@react-navigation/native';
@@ -7,6 +7,27 @@ import { useNavigation } from '@react-navigation/native';
 const Cadastro = () => {
   const navigation = useNavigation();
   const [isLoading, setIsLoading] = useState(false);
+
+  const [isModalVisible, setModalVisible] = useState(false);
+  const [selectedOption, setSelectedOption] = useState(null);
+  const [selectedRoomNumber, setSelectedRoomNumber] = useState(null);
+
+  const options = [
+    { label: "Terceiro ano A - Sala 1", roomNumber: 1 },
+    { label: "Terceiro ano B - Sala 2", roomNumber: 2 },
+    { label: "Terceiro ano C - Sala 3", roomNumber: 3 },
+  ];
+
+  const toggleModal = () => {
+    setModalVisible(!isModalVisible);
+  };
+
+  const handleSelectOption = (option, setFieldValue) => {
+    setSelectedOption(option.label);
+    setSelectedRoomNumber(option.roomNumber);
+    setFieldValue('roomNumber', option.roomNumber);
+    setModalVisible(false);
+  };
 
   const cadastroValidationSchema = Yup.object().shape({
     name: Yup.string().required("Nome é obrigatório"),
@@ -21,10 +42,11 @@ const Cadastro = () => {
 
   // Função para lidar com o envio do cadastro
   const handleCadastro = async (values) => {
-    setIsLoading(true);
+    setIsLoading(true); 
+    
 
     try {
-      const response = await fetch('http://10.0.0.236:4001/cadastro', {  
+      const response = await fetch('http://10.1.13.19:4001/cadastro', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -33,14 +55,22 @@ const Cadastro = () => {
           name: values.name,
           email: values.email,
           password: values.password,
+          roomNumber: values.roomNumber, 
         }),
       });
 
       const data = await response.json();
+     
 
       if (response.ok) {
+      console.log(data)
+
+        //if(response.user[roomNumber] == 1){ arrumar depois
         Alert.alert('Sucesso', 'Cadastro realizado com sucesso!');
-        navigation.navigate('Login'); // Navega para a tela de login
+        navigation.navigate('Home', {
+          user: data.user, // Passa o objeto do usuário para a tela Home
+        });
+        //}
       } else {
         Alert.alert('Erro', data.message || 'Falha no cadastro.');
       }
@@ -67,11 +97,11 @@ const Cadastro = () => {
     <View style={styles.container}>
       <ConteudoBase />
       <Formik
-        initialValues={{ name: '', email: '', password: '', confirmPassword: '' }}
+        initialValues={{ name: '', email: '', password: '', confirmPassword: '', roomNumber: '' }}
         validationSchema={cadastroValidationSchema}
         onSubmit={handleCadastro}
       >
-        {({ handleChange, handleBlur, handleSubmit, values, errors, touched }) => (
+        {({ handleChange, handleBlur, handleSubmit, values, errors, touched, setFieldValue }) => (
           <View>
             <Text style={styles.title}>Cadastro</Text>
             <TextInput
@@ -116,11 +146,45 @@ const Cadastro = () => {
             {touched.confirmPassword && errors.confirmPassword && (
               <Text style={styles.error}>{errors.confirmPassword}</Text>
             )}
+
+            <TouchableOpacity style={styles.selectButton} onPress={toggleModal}>
+              <Text style={styles.selectText}>
+                {selectedOption ? selectedOption : "Selecione a sala"}
+              </Text>
+            </TouchableOpacity>
+
+            <Modal
+              visible={isModalVisible}
+              animationType="slide"
+              transparent={true}
+              onRequestClose={toggleModal}
+            >
+              <View style={styles.modalBackground}>
+                <View style={styles.modalContainer}>
+                  <FlatList
+                    data={options}
+                    keyExtractor={(item) => item.roomNumber.toString()}
+                    renderItem={({ item }) => (
+                      <TouchableOpacity
+                        style={styles.option}
+                        onPress={() => handleSelectOption(item, setFieldValue)}
+                      >
+                        <Text style={styles.optionText}>{item.label}</Text>
+                      </TouchableOpacity>
+                    )}
+                  />
+                  <TouchableOpacity style={styles.closeButton} onPress={toggleModal}>
+                    <Text style={styles.closeButtonText}>Fechar</Text>
+                  </TouchableOpacity>
+                </View>
+              </View>
+            </Modal>
+
             <TouchableOpacity style={styles.button} onPress={handleSubmit}>
               <Text style={styles.buttonText}>Cadastrar</Text>
             </TouchableOpacity>
-            <TouchableOpacity 
-              style={styles.link} 
+            <TouchableOpacity
+              style={styles.link}
               onPress={() => navigation.navigate('Login')}
             >
               <Text style={styles.linkText}>Já tem uma conta? Faça login</Text>
@@ -133,6 +197,7 @@ const Cadastro = () => {
 };
 
 const styles = StyleSheet.create({
+  // Estilos iguais ao código original, com adição dos estilos do modal e botão de seleção
   container: {
     flex: 1,
     justifyContent: 'center',
@@ -166,10 +231,47 @@ const styles = StyleSheet.create({
     fontSize: 18,
     fontWeight: 'bold',
   },
-  error: {
-    fontSize: 14,
-    color: 'red',
-    marginBottom: 10,
+  selectButton: {
+    marginVertical: 10,
+    padding: 10,
+    backgroundColor: '#007BFF',
+    borderRadius: 5,
+  },
+  selectText: {
+    color: '#fff',
+    fontSize: 18,
+    textAlign: 'center',
+  },
+  modalBackground: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+  },
+  modalContainer: {
+    backgroundColor: '#fff',
+    borderRadius: 10,
+    padding: 20,
+    width: 300,
+  },
+  option: {
+    padding: 10,
+    borderBottomWidth: 1,
+    borderBottomColor: '#ddd',
+  },
+  optionText: {
+    fontSize: 18,
+  },
+  closeButton: {
+    padding: 10,
+    backgroundColor: '#ccc',
+    marginTop: 20,
+    borderRadius: 5,
+  },
+  closeButtonText: {
+    textAlign: 'center',
+    color: '#000',
+    fontSize: 16,
   },
   link: {
     marginTop: 20,
@@ -178,16 +280,6 @@ const styles = StyleSheet.create({
   linkText: {
     color: '#007BFF',
     fontSize: 16,
-  },
-  loadingContainer: {
-    justifyContent: 'center',
-    alignItems: 'center',
-    flex: 1,
-  },
-  image: {
-    width: 150,
-    height: 150,
-    marginBottom: 20,
   },
 });
 
